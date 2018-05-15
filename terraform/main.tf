@@ -48,7 +48,7 @@ resource "google_compute_instance_template" "instance_template_final_staging" {
       gce-container-declaration = <<EOF
   spec:
     containers:
-      - image: 'gcr.io/comp698-cek1020/github-chriskhosh-comp698-final:586d8d6b8c954f76ce4d2a81de35f8e59d04bcd3'
+      - image: 'gcr.io/comp698-cek1020/github-chriskhosh-comp698-final:20c0970ccbadd59e565ef0f93676be357c83bf3d'
         name: service-container
         stdin: false
         tty: false
@@ -61,6 +61,57 @@ resource "google_compute_instance_group_manager" "instance_group_manager_final_s
   name               = "instance-group-manager-final-staging"
   instance_template  = "${google_compute_instance_template.instance_template_final_staging.self_link}"
   base_instance_name = "tf-server-final-staging"
+  zone               = "us-central1-a"
+  target_size        = "1"
+}
+
+resource "google_compute_instance_template" "instance_template_final_prod" {
+  name_prefix  = "instancetemplatefinalprod-"
+  machine_type = "f1-micro"
+  region       = "us-central1"
+
+  tags = ["http-server"]
+
+  // boot disk
+  disk {
+    source_image = "cos-cloud/cos-stable"
+  }
+
+  network_interface {
+    network = "default"
+    access_config {
+    }
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  service_account {
+    scopes = [
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/devstorage.read_write"
+    ]
+  }
+
+  metadata {
+      gce-container-declaration = <<EOF
+  spec:
+    containers:
+      - image: 'gcr.io/comp698-cek1020/github-chriskhosh-comp698-final:586d8d6b8c954f76ce4d2a81de35f8e59d04bcd3'
+        name: service-container
+        stdin: false
+        tty: false
+    restartPolicy: Always
+  EOF
+  }
+}
+
+resource "google_compute_instance_group_manager" "instance_group_manager_final_prod" {
+  name               = "instance-group-manager-final-prod"
+  instance_template  = "${google_compute_instance_template.instance_template_final_prod.self_link}"
+  base_instance_name = "tf-server-final-prod"
   zone               = "us-central1-a"
   target_size        = "1"
 }
